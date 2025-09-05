@@ -1,7 +1,7 @@
 variable "ghost_image_version" {
   description = "Version of Docker image for Ghost CMS"
   type = string
-  default = "5.73.2-alpine"
+  default = "5.130-alpine"
 }
 
 variable "database_password" {

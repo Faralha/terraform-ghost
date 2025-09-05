@@ -8,16 +8,24 @@ terraform {
   }
 }
 
+# --- NETWORK CONFIGURATION ---
+resource "docker_network" "ghost_network" {
+  name = "ghost_network"
+}
+
 # --- DATABASE CONFIGURATION ---
 resource "docker_image" "mysql_image" {
-  name         = "mysql:8.0"
+  name         = "mysql:5.7"
   keep_locally = true
 }
 
 # Create MySQL Container
 resource "docker_container" "mysql_container" {
-  name  = "ghost_mysql"
+  name  = "ghost-mysql"
   image = docker_image.mysql_image.name
+
+  # Change native password authentication plugin to mysql_native_password + disable SSL
+  command = ["mysqld", "--default-authentication-plugin=mysql_native_password", "--ssl=0"]
 
   # Environment variables for MySQL
   env = [
@@ -29,6 +37,10 @@ resource "docker_container" "mysql_container" {
   ports {
     internal = 3306
     external = 3306
+  }
+
+  networks_advanced {
+    name = docker_network.ghost_network.name
   }
 }
 
@@ -50,6 +62,8 @@ resource "docker_container" "ghost_container" {
     "database__connection__user=root",
     "database__connection__password=${var.database_password}",
     "database__connection__database=${var.database_name}",
+    "database__connection__port=3306",
+    "database__connection__charset=utf8mb4",
     "url=${var.ghost_url}"
   ]
 
@@ -61,6 +75,10 @@ resource "docker_container" "ghost_container" {
 
   # Create dependencies so ghost only starts after mysql ready
   depends_on = [ docker_container.mysql_container ]
+  restart = "on-failure"
+  networks_advanced {
+    name = docker_network.ghost_network.name
+  }
 }
 
 # Outputs Ghost URL after succesful deployment
