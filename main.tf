@@ -67,6 +67,15 @@ resource "docker_container" "ghost_container" {
     "url=${var.ghost_url}"
   ]
 
+  # Healthcheck -> periodically check if Ghost is up and running
+  healthcheck {
+    test = ["CMD", "curl", "-f", var.ghost_url]
+    interval = "1m"
+    timeout = "10s"
+    retries = 3
+    start_period = "30s"
+  }
+
   # Port to access Ghost from outside
   ports {
     internal = 2368
