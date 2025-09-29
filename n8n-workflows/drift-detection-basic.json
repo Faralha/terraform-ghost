@@ -1,0 +1,273 @@
+{
+  "name": "Terraform Drift Detection - Basic",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "drift-detected",
+        "options": {}
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890123",
+      "name": "Drift Detected Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "drift-detected"
+    },
+    {
+      "parameters": {
+        "path": "drift-status",
+        "options": {}
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890124",
+      "name": "No Drift Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        500
+      ],
+      "webhookId": "drift-status"
+    },
+    {
+      "parameters": {
+        "path": "drift-error",
+        "options": {}
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890125",
+      "name": "Error Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        700
+      ],
+      "webhookId": "drift-error"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "drift_detected",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890126",
+      "name": "Check Event Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and format drift detection data\nconst eventData = $input.first().json;\n\n// Create formatted message for notifications\nconst message = {\n  alert_type: \"TERRAFORM_DRIFT_DETECTED\",\n  severity: \"HIGH\",\n  timestamp: eventData.timestamp,\n  hostname: eventData.hostname,\n  project: \"terraform-ghost\",\n  details: {\n    exit_code: eventData.exit_code,\n    message: eventData.message,\n    summary: eventData.summary || \"Configuration drift detected\",\n    source: eventData.source\n  },\n  formatted_message: `🚨 **TERRAFORM DRIFT DETECTED**\\n\\n` +\n                     `**Project:** terraform-ghost\\n` +\n                     `**Time:** ${eventData.timestamp}\\n` +\n                     `**Host:** ${eventData.hostname}\\n` +\n                     `**Status:** ${eventData.message}\\n\\n` +\n                     `**Summary:** ${eventData.summary || 'Configuration drift detected'}\\n\\n` +\n                     `Please review and apply terraform changes immediately.`,\n  action_required: true,\n  review_url: \"http://localhost:3001\" // Ghost CMS URL\n};\n\nreturn { json: message };"
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890127",
+      "name": "Format Drift Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process successful status or error events\nconst eventData = $input.first().json;\n\nlet message;\n\nif (eventData.event === 'no_drift') {\n  message = {\n    alert_type: \"TERRAFORM_STATUS_OK\",\n    severity: \"INFO\",\n    timestamp: eventData.timestamp,\n    hostname: eventData.hostname,\n    project: \"terraform-ghost\",\n    details: {\n      exit_code: eventData.exit_code,\n      message: eventData.message,\n      source: eventData.source\n    },\n    formatted_message: `✅ **Terraform Status: OK**\\n\\n` +\n                       `**Project:** terraform-ghost\\n` +\n                       `**Time:** ${eventData.timestamp}\\n` +\n                       `**Host:** ${eventData.hostname}\\n` +\n                       `**Status:** No configuration drift detected`,\n    action_required: false\n  };\n} else {\n  // Error event\n  message = {\n    alert_type: \"TERRAFORM_ERROR\",\n    severity: \"CRITICAL\",\n    timestamp: eventData.timestamp,\n    hostname: eventData.hostname,\n    project: \"terraform-ghost\",\n    details: {\n      exit_code: eventData.exit_code,\n      message: eventData.message,\n      error_details: eventData.error_details || 'Unknown error',\n      source: eventData.source\n    },\n    formatted_message: `❌ **TERRAFORM ERROR**\\n\\n` +\n                       `**Project:** terraform-ghost\\n` +\n                       `**Time:** ${eventData.timestamp}\\n` +\n                       `**Host:** ${eventData.hostname}\\n` +\n                       `**Error:** ${eventData.message}\\n\\n` +\n                       `**Details:** ${eventData.error_details || 'Check logs for more information'}\\n\\n` +\n                       `Immediate attention required!`,\n    action_required: true\n  };\n}\n\nreturn { json: message };"
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890128",
+      "name": "Format Status/Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.formatted_message }}"
+            },
+            {
+              "name": "channel",
+              "value": "#terraform-alerts"
+            },
+            {
+              "name": "username",
+              "value": "Terraform Drift Bot"
+            },
+            {
+              "name": "icon_emoji",
+              "value": ":warning:"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890129",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        300
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "log",
+        "message": "=Terraform Alert: {{ $json.alert_type }} - {{ $json.formatted_message }}"
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890130",
+      "name": "Log Alert",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "log",
+        "message": "=Terraform Status: {{ $json.alert_type }} - {{ $json.formatted_message }}"
+      },
+      "id": "f4b8c5d1-1234-4567-8901-234567890131",
+      "name": "Log Status",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        500
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Drift Detected Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Event Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Drift Webhook": {
+      "main": [
+        [
+          {
+            "node": "Format Status/Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Webhook": {
+      "main": [
+        [
+          {
+            "node": "Format Status/Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Event Type": {
+      "main": [
+        [
+          {
+            "node": "Format Drift Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Status/Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Drift Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Status/Error": {
+      "main": [
+        [
+          {
+            "node": "Log Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

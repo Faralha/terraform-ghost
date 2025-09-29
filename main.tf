@@ -3,7 +3,7 @@ terraform {
   required_providers {
     docker = {
       source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+      version = "~> 2.25"
     }
   }
 }
@@ -32,6 +32,19 @@ resource "docker_container" "mysql_container" {
     "MYSQL_ROOT_PASSWORD=${var.database_password}",
     "MYSQL_DATABASE=${var.database_name}"
   ]
+
+  # Ignore certain changes that don't affect functionality
+  lifecycle {
+    ignore_changes = [
+      network_mode,
+      entrypoint,
+      hostname,
+      ip_address,
+      ip_prefix_length,
+      gateway,
+      network_data
+    ]
+  }
 
   # Port Allocation
   ports {
@@ -66,6 +79,20 @@ resource "docker_container" "ghost_container" {
     "database__connection__charset=utf8mb4",
     "url=${var.ghost_url}"
   ]
+
+  # Ignore certain changes that don't affect functionality
+  lifecycle {
+    ignore_changes = [
+      network_mode,
+      command,
+      entrypoint,
+      hostname,
+      ip_address,
+      ip_prefix_length,
+      gateway,
+      network_data
+    ]
+  }
 
   # Healthcheck -> periodically check if Ghost is up and running
   healthcheck {

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Container untuk menjalankan Terraform dan inisialisasi
+  terraform_runner:
+    image: alpine:latest
+    container_name: terraform_runner
+    working_dir: /app
+    volumes:
+      - .:/app  # Mount seluruh project directory
+      - tf_state:/app/.terraform  # Volume for Terraform state files
+    networks:
+      - ghost_network  # Same network as Ghost infrastructure  
+      - n8n_network    # Access to n8n for webhooks
+    command: >
+      sh -c "
+      apk add --no-cache wget unzip curl &&
+      wget -O terraform.zip https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip &&
+      unzip terraform.zip &&
+      mv terraform /usr/local/bin/ &&
+      chmod +x /usr/local/bin/terraform &&
+      echo 'Terraform v1.6.0 installed successfully' &&
+      echo 'Container ready for terraform operations' &&
+      echo 'Use: docker exec terraform_runner terraform <command>' &&
+      while true; do sleep 3600; done
+      "
+    
+  # Container untuk drift detection dan orchestration
+  orchestrator:
+    image: alpine:latest
+    container_name: orchestrator
+    volumes:
+      - ./scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket access
+    networks:
+      - ghost_network  # Monitor Ghost infrastructure directly
+      - n8n_network    # Send webhooks to n8n
+    depends_on:
+      - terraform_runner
+    command: >
+      sh -c "
+      apk add --no-cache docker-cli curl jq &&
+      echo '*/5 * * * * /scripts/check_drift.sh >> /proc/1/fd/1 2>&1' | crontab - &&
+      crond -f -l 8
+      "
+
+volumes:
+  tf_state:
+    driver: local
+  n8n_data:
+    driver: local
+
+networks:
+  # Gunakan network yang sama dengan infrastruktur Ghost untuk monitoring
+  ghost_network:
+    external: true
+    name: ghost_network
+  
+  # Network khusus untuk n8n jika diperlukan isolasi
+  n8n_network:
+    driver: bridge
+    name: n8n_network
