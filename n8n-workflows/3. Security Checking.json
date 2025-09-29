@@ -1,26 +1,33 @@
 {
-  "name": "Security Vulnerability Monitoring",
+  "name": "3. Security Checking",
   "nodes": [
     {
       "parameters": {
         "path": "security-scan",
         "options": {}
       },
-      "id": "security-webhook",
+      "id": "3dd2305d-b8c0-4afb-9ac3-30888e3dc6e3",
       "name": "Security Scan Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        -224,
+        32
+      ],
+      "webhookId": "5c0fa171-312d-46df-8934-519d2ab629ce"
     },
     {
       "parameters": {
         "jsCode": "// Parse security scan webhook data\nconst queryParams = $input.first().json.query;\n\n// Extract security scan information\nconst securityData = {\n  event: queryParams.event || 'unknown',\n  timestamp: queryParams.timestamp || new Date().toISOString(),\n  hostname: queryParams.hostname || 'unknown',\n  container: queryParams.container || 'unknown',\n  severity: queryParams.severity || 'UNKNOWN',\n  vulnerability_count: parseInt(queryParams.vulnerability_count) || 0,\n  scan_result: queryParams.scan_result || 'No details available',\n  source: queryParams.source || 'security_scan'\n};\n\n// Determine alert urgency and formatting\nlet alertIcon, alertColor, alertTitle;\n\nswitch (securityData.severity) {\n  case 'CRITICAL':\n    alertIcon = '🚨';\n    alertColor = '#FF0000';\n    alertTitle = 'CRITICAL SECURITY ALERT';\n    break;\n  case 'HIGH':\n    alertIcon = '⚠️';\n    alertColor = '#FF8C00';\n    alertTitle = 'HIGH SECURITY RISK';\n    break;\n  case 'MEDIUM':\n    alertIcon = '⚡';\n    alertColor = '#FFD700';\n    alertTitle = 'MEDIUM SECURITY RISK';\n    break;\n  case 'LOW':\n  case 'INFO':\n    alertIcon = '✅';\n    alertColor = '#00AA00';\n    alertTitle = 'SECURITY STATUS';\n    break;\n  case 'ERROR':\n    alertIcon = '❌';\n    alertColor = '#AA0000';\n    alertTitle = 'SECURITY SCAN ERROR';\n    break;\n  default:\n    alertIcon = '🔍';\n    alertColor = '#0066CC';\n    alertTitle = 'SECURITY SCAN UPDATE';\n}\n\n// Create formatted notification message\nconst notificationMessage = {\n  ...securityData,\n  alert_icon: alertIcon,\n  alert_color: alertColor,\n  alert_title: alertTitle,\n  formatted_message: `${alertIcon} **${alertTitle}**\\n\\n` +\n                     `**Container:** ${securityData.container}\\n` +\n                     `**Hostname:** ${securityData.hostname}\\n` +\n                     `**Severity:** ${securityData.severity}\\n` +\n                     `**Vulnerabilities:** ${securityData.vulnerability_count}\\n` +\n                     `**Timestamp:** ${securityData.timestamp}\\n\\n` +\n                     `**Details:** ${securityData.scan_result}\\n\\n` +\n                     `**Event:** ${securityData.event}`,\n  requires_action: ['CRITICAL', 'HIGH', 'ERROR'].includes(securityData.severity),\n  notification_priority: securityData.severity === 'CRITICAL' ? 'urgent' : \n                        securityData.severity === 'HIGH' ? 'high' : 'normal'\n};\n\nreturn { json: notificationMessage };"
       },
-      "id": "parse-security-data",
+      "id": "e19e914e-2f97-4219-8a80-6144c034b9d8",
       "name": "Parse Security Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        0,
+        32
+      ]
     },
     {
       "parameters": {
@@ -41,7 +48,7 @@
               }
             },
             {
-              "id": "high-condition", 
+              "id": "high-condition",
               "leftValue": "={{ $json.severity }}",
               "rightValue": "HIGH",
               "operator": {
@@ -54,11 +61,14 @@
         },
         "options": {}
       },
-      "id": "check-severity",
+      "id": "bfea4604-4d6c-4e23-bde4-e64fd3d66f96",
       "name": "Is Critical/High Risk?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        224,
+        32
+      ]
     },
     {
       "parameters": {
@@ -74,63 +84,117 @@
           ]
         },
         "sendBody": true,
-        "bodyContentType": "json",
-        "jsonBody": "={\n  \"channel\": \"#security-alerts\",\n  \"username\": \"Security Scanner Bot\",\n  \"icon_emoji\": \":warning:\",\n  \"attachments\": [\n    {\n      \"color\": \"{{ $json.alert_color }}\",\n      \"title\": \"{{ $json.alert_title }}\",\n      \"fields\": [\n        {\n          \"title\": \"Container\",\n          \"value\": \"{{ $json.container }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Severity\",\n          \"value\": \"{{ $json.severity }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Vulnerabilities\",\n          \"value\": \"{{ $json.vulnerability_count }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Event Type\", \n          \"value\": \"{{ $json.event }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Scan Results\",\n          \"value\": \"{{ $json.scan_result }}\",\n          \"short\": false\n        }\n      ],\n      \"footer\": \"Trivy Security Scanner\",\n      \"ts\": \"{{ Math.floor(Date.now() / 1000) }}\"\n    }\n  ]\n}",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
         "options": {}
       },
-      "id": "send-slack-alert",
+      "id": "732f302f-379e-4765-a72c-6ce8fe723f3e",
       "name": "Send Slack Alert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [900, 200],
+      "position": [
+        656,
+        -192
+      ],
       "disabled": true
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyContentType": "json",
-        "jsonBody": "={\n  \"embeds\": [\n    {\n      \"title\": \"{{ $json.alert_icon }} {{ $json.alert_title }}\",\n      \"description\": \"Security vulnerability scan results for container infrastructure\",\n      \"color\": {{ $json.alert_color === '#FF0000' ? '15158332' : ($json.alert_color === '#FF8C00' ? '16753920' : ($json.alert_color === '#FFD700' ? '16766720' : '65280')) }},\n      \"fields\": [\n        {\n          \"name\": \"🐳 Container\",\n          \"value\": \"{{ $json.container }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"⚠️ Severity\",\n          \"value\": \"{{ $json.severity }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"🔢 Vulnerabilities\",\n          \"value\": \"{{ $json.vulnerability_count }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"🖥️ Host\",\n          \"value\": \"{{ $json.hostname }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"📅 Timestamp\",\n          \"value\": \"{{ $json.timestamp }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"🔍 Event\",\n          \"value\": \"{{ $json.event }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"📋 Scan Details\",\n          \"value\": \"{{ $json.scan_result }}\",\n          \"inline\": false\n        }\n      ],\n      \"footer\": {\n        \"text\": \"Trivy Security Scanner • terraform-ghost project\"\n      },\n      \"timestamp\": \"{{ new Date().toISOString() }}\"\n    }\n  ]\n}",
-        "options": {}
-      },
-      "id": "send-discord-alert",
-      "name": "Send Discord Alert", 
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [900, 300],
-      "disabled": true
-    },
-    {
-      "parameters": {
-        "operation": "log",
-        "message": "=Security scan processed: {{ $json.event }} - Container: {{ $json.container }} - Severity: {{ $json.severity }} - Vulnerabilities: {{ $json.vulnerability_count }}"
-      },
-      "id": "log-security-event",
+      "parameters": {},
+      "id": "255c86fa-e341-4d24-90d0-91697959bf10",
       "name": "Log Security Event",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [900, 400]
+      "position": [
+        656,
+        144
+      ]
     },
     {
-      "parameters": {
-        "operation": "log",
-        "message": "=Low priority security event logged: {{ $json.event }} - {{ $json.container }} - {{ $json.severity }}"
-      },
-      "id": "log-low-priority",
+      "parameters": {},
+      "id": "faae97cd-3eaa-4e9d-b92a-ca3296e21e43",
       "name": "Log Low Priority Event",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [900, 500]
+      "position": [
+        656,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=",
+        "options": {},
+        "embeds": {
+          "values": [
+            {
+              "description": "=Count:  {{ $json.vulnerability_count }}\nScan Results: {{ $json.scan_result }}",
+              "author": "=Trivy",
+              "color": "={{ $json.alert_color }}",
+              "timestamp": "={{ $json.timestamp }}",
+              "title": "={{ $json.severity }} - {{ $json.container }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        656,
+        -16
+      ],
+      "id": "1cbf3f1d-dccc-4acb-b64a-a6a940669009",
+      "name": "Send Discord Alert",
+      "webhookId": "bd8b5c32-b30c-4661-ae63-a015c60a11b8",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "GJ2sGsDOem7hcYKV",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "DevOps"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10003",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "=Vulnerabilites Detected - {{ $json.severity }} {{ $json.container }} hostname: {{ $json.hostname }} Count: {{ $json.vulnerability_count }}",
+        "additionalFields": {
+          "description": "={{ $json.formatted_message }}",
+          "priority": {
+            "__rl": true,
+            "value": "1",
+            "mode": "list",
+            "cachedResultName": "Highest"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        656,
+        -352
+      ],
+      "id": "9a957284-b282-47b7-89c0-f8850bba96f5",
+      "name": "Create an issue",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "5hupqRT08f2HFI4Z",
+          "name": "Jira SW Cloud account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -166,12 +230,17 @@
             "index": 0
           },
           {
+            "node": "Log Security Event",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "Send Discord Alert",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Log Security Event",
+            "node": "Create an issue",
             "type": "main",
             "index": 0
           }
@@ -184,16 +253,22 @@
           }
         ]
       ]
+    },
+    "Send Discord Alert": {
+      "main": [
+        []
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "5",
-  "id": "5",
+  "versionId": "c5fc0ab3-18c4-47ee-9e66-d162bede217e",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "templateCredsSetupCompleted": true,
+    "instanceId": "56812142edffed6cfff8ea61ac32a7e7df636554047dc7ea562c100bfa7314f9"
   },
+  "id": "JBVabGZYFzyRcidS",
   "tags": []
 }

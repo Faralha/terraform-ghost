@@ -1,0 +1,144 @@
+{
+  "name": "2: Configuration Drifting",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drift-detected",
+        "options": {}
+      },
+      "id": "2e225d2c-6ae8-4291-a0d5-40669a1071e4",
+      "name": "Drift Detected",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        512,
+        -176
+      ],
+      "webhookId": "cc796f2b-fda5-423d-bef5-f53a08261310"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drift-status",
+        "options": {}
+      },
+      "id": "32ec3503-a7b3-4a03-8e09-c1d871f319ef",
+      "name": "Status Update",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        512,
+        32
+      ],
+      "webhookId": "7f1484ce-7bbd-4aab-949c-93a884600c6a"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drift-error",
+        "options": {}
+      },
+      "id": "e9897737-abf8-4dc7-a3f7-9345bbf0f36c",
+      "name": "Error Alert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        512,
+        240
+      ],
+      "webhookId": "6f225108-6af0-41bd-be5e-5d1f687d27d3"
+    },
+    {
+      "parameters": {},
+      "id": "7a206336-3579-41ff-b155-bead03e23eb9",
+      "name": "Log Notification",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.body.toJsonString() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        48
+      ],
+      "id": "bf02c026-fa0e-42e2-a194-77117cf9e892",
+      "name": "Discord",
+      "webhookId": "5c0ef130-edca-4f94-ac96-e1936ac7bff4",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "GJ2sGsDOem7hcYKV",
+          "name": "Discord Webhook account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Drift Detected": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Update": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Alert": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord": {
+      "main": [
+        [
+          {
+            "node": "Log Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a7be191e-b0f0-40a6-8d9d-46a77dd6fa8a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "56812142edffed6cfff8ea61ac32a7e7df636554047dc7ea562c100bfa7314f9"
+  },
+  "id": "NvX1AynqZcqjNmDo",
+  "tags": []
+}

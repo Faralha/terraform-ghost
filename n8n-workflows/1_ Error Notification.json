@@ -1,0 +1,80 @@
+{
+  "name": "1: Error Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e32b77bb-4c04-4122-a9ca-b7d347679425",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -544,
+        -80
+      ],
+      "id": "6024e557-5b6a-4b65-affa-ae5104e4d282",
+      "name": "Webhook",
+      "webhookId": "e32b77bb-4c04-4122-a9ca-b7d347679425",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "options": {},
+        "embeds": {
+          "values": [
+            {
+              "description": "={{ $json.body.msg }}",
+              "author": "=Uptime Kuma - {{ $json.body.monitor.name }}",
+              "color": "#FF0404",
+              "timestamp": "={{ $now }}",
+              "title": "=ERROR -  {{ $json.body.heartbeat.msg }}",
+              "url": "="
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        -80
+      ],
+      "id": "8021d1b2-5b04-435f-8e78-593424f33712",
+      "name": "Discord",
+      "webhookId": "a79b89f0-c965-4866-b01d-a4144f490b31",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "GJ2sGsDOem7hcYKV",
+          "name": "Discord Webhook account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a6c469a6-3e87-44c4-92b7-1451a16ef30a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "56812142edffed6cfff8ea61ac32a7e7df636554047dc7ea562c100bfa7314f9"
+  },
+  "id": "BTfxOJjdEyBY89P6",
+  "tags": []
+}
