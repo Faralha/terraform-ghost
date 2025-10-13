@@ -7,7 +7,7 @@ echo "========================================="
 
 # Configuration
 TRIVY_IMAGE="aquasec/trivy:latest"
-WEBHOOK_BASE_URL="http://localhost:5678/webhook-test"
+WEBHOOK_BASE_URL="http://localhost:5678/webhook"
 SCAN_RESULTS_DIR="/tmp/trivy-scans"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 HOSTNAME=$(hostname)

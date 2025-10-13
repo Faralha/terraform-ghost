@@ -26,6 +26,7 @@ echo "📊 Terraform plan exit code: $EXIT_CODE"
 # Prepare webhook payload
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 HOSTNAME=$(hostname)
+N8N_WEBHOOK_URL="http://localhost:5678/webhook
 
 if [ $EXIT_CODE -eq 2 ]; then
     echo "⚠️  DRIFT DETECTED!"
